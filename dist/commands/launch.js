@@ -85,10 +85,10 @@ async function app(options) {
     const appName = options.app ?? result.app;
     const custom = customizations[appName];
     const app = 'dev' == env ? custom.development : custom.production;
+    app.status = status;
     console.log(`${custom.appName} is launching...`);
     await mergeCustomize(custom.appName, app);
     console.log(`${custom.appName} is launch as ${status}`);
-    app.status = status;
     appStorage.saveCustomization(custom);
     console.log(chalk.green(`${appName} was launched successfully. GoodLuck!`));
 }

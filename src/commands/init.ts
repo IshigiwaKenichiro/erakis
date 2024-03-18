@@ -1,13 +1,14 @@
 import { program } from "commander";
-import {AppStorage} from '../storage/AppStorage.js';
-import {ProfileStorage} from '../storage/ProfileStorage.js';
-import {ServerStorage} from '../storage/ServerStorage.js';
+import { AppStorage } from '../storage/AppStorage.js';
+import { ProfileStorage } from '../storage/ProfileStorage.js';
+import { ServerStorage } from '../storage/ServerStorage.js';
 import { prepareIndex, prepareTemplate, prepareTest } from "../utils/_prepareTemplate.js";
 import inquirer from "inquirer";
 import chalk from "chalk";
+import fs from "fs-extra";
 
 
-export function initCommand(){
+export function initCommand() {
     const sub = program.command('init');
 
     sub.description('Initialize this project for Erakis.');
@@ -15,7 +16,7 @@ export function initCommand(){
     sub.action(init)
 }
 
-export function init(){
+export function init() {
 
     console.log('Initializing...');
     new AppStorage();
@@ -23,6 +24,20 @@ export function init(){
     new ServerStorage();
     prepareTest();
     prepareIndex(true);
+
+    const packageJson = fs.readJSONSync('package.json');
+
+    if (null != packageJson?.main) {
+
+        console.log(`package.json#main removed. package.json#main property should not be used.`)
+        delete packageJson.main;
+
+
+        fs.writeJSONSync('package.json', packageJson, {
+            spaces: '\t'
+        });
+
+    }
 
     console.log('Initialization complete.');
 
