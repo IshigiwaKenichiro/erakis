@@ -1,6 +1,6 @@
 {
   "name": "erakis",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Erakis provides simple kintone customzation helper with Parcel",
   "main": "./dist/index.js",
   "type": "module",

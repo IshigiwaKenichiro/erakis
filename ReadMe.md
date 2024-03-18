@@ -66,7 +66,7 @@ npx erakis start
     - kintoneアクセスデータの削除
 
 ### app
-- npx erakis app connect < appName >
+- npx erakis app connect
     - kintone上のアプリとカスタマイズの紐づけ。
 - npx erakis app status
     - kintoneカスタマイズの状態表示
