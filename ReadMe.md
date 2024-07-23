@@ -1,6 +1,6 @@
 # Erakis
 kintoneのシンプルなカスタマイズ開発環境です。   
-windows対象(2024年3月時点)
+windows対象(2024年7月時点)
 
 ## Install
 必要な作業は以下の２つです。
@@ -23,7 +23,7 @@ choco install mkcert
 ---
 ### 本体のインストール
 ```
-npm i https://github.com/IshigiwaKenichiro/erakis.git
+npm i erakis
 ```
 ---
 
