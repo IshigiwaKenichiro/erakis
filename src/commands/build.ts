@@ -26,6 +26,6 @@ export function build(){
 
     const files = getBuildTargets();
 
-    exec(`npx parcel build ${files.join(' ')} --dist-dir ${distDir}`);
+    exec(`npx parcel build ${files.join(' ')} --dist-dir ${distDir} --no-cache`);
 
 }

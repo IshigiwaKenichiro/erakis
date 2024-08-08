@@ -32,5 +32,13 @@
     "@types/lodash": "^4.14.202",
     "@types/mocha": "^10.0.6",
     "typescript": "^5.3.3"
-  }
+  },
+  "keywords": [
+    "kintone"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/IshigiwaKenichiro/erakis"
+  },
+  "homepage": "https://github.com/IshigiwaKenichiro/erakis"
 }
