@@ -89,6 +89,10 @@ npx erakis start
 - npx erakis launch all
     - 配下のkintoneアプリのカスタマイズ状態をまとめて変える
 
+### ginue
+- npx erakis ginue
+    - 設定情報をもとに`.ginuerc.js`ファイルを生成する
+
 ### clear
 - npx erakis clear
     - dist, buildディレクトリを削除する。
