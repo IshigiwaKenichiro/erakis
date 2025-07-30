@@ -8,6 +8,7 @@ import { launchCommand } from './commands/launch.js';
 import { profileCommand } from './commands/profile.js';
 import { startCommand } from './commands/start.js';
 import { initCommand } from './commands/init.js';
+import { ginueCommand } from './commands/ginue.js';
 
 
 (() => {
@@ -23,6 +24,7 @@ import { initCommand } from './commands/init.js';
     launchCommand();
     profileCommand();
     startCommand();
+    ginueCommand();
     program.parse(process.argv);
 
 })();

@@ -8,6 +8,7 @@ import { launchCommand } from './commands/launch.js';
 import { profileCommand } from './commands/profile.js';
 import { startCommand } from './commands/start.js';
 import { initCommand } from './commands/init.js';
+import { ginueCommand } from './commands/ginue.js';
 (() => {
     program.name('erakis')
         .description('Erakis helps your kintone customization.');
@@ -19,5 +20,6 @@ import { initCommand } from './commands/init.js';
     launchCommand();
     profileCommand();
     startCommand();
+    ginueCommand();
     program.parse(process.argv);
 })();
