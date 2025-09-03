@@ -9,6 +9,7 @@ import { profileCommand } from './commands/profile.js';
 import { startCommand } from './commands/start.js';
 import { initCommand } from './commands/init.js';
 import { ginueCommand } from './commands/ginue.js';
+import { mcpCommand } from './commands/mcp.js';
 
 
 (() => {
@@ -25,6 +26,7 @@ import { ginueCommand } from './commands/ginue.js';
     profileCommand();
     startCommand();
     ginueCommand();
+    mcpCommand();
     program.parse(process.argv);
 
 })();
