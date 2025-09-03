@@ -93,6 +93,10 @@ npx erakis start
 - npx erakis ginue
     - 設定情報をもとに`.ginuerc.js`ファイルを生成する
 
+### mcp
+- npx erakis mcp
+    - 設定情報をもとに、`kintone-mcp-server`の`.mcp.json`を生成する
+
 ### clear
 - npx erakis clear
     - dist, buildディレクトリを削除する。
