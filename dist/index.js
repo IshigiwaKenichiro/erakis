@@ -9,6 +9,7 @@ import { profileCommand } from './commands/profile.js';
 import { startCommand } from './commands/start.js';
 import { initCommand } from './commands/init.js';
 import { ginueCommand } from './commands/ginue.js';
+import { mcpCommand } from './commands/mcp.js';
 (() => {
     program.name('erakis')
         .description('Erakis helps your kintone customization.');
@@ -21,5 +22,6 @@ import { ginueCommand } from './commands/ginue.js';
     profileCommand();
     startCommand();
     ginueCommand();
+    mcpCommand();
     program.parse(process.argv);
 })();
