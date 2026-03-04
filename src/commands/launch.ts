@@ -8,6 +8,7 @@ const appStorage = new AppStorage();
 type AllOptions = {
     env: 'dev' | 'prod';
     status: 'local' | 'fixed' | 'released';
+    yes?: boolean;
 }
 
 type AppOptions = {
@@ -24,27 +25,30 @@ export function launchCommand() {
     sub.command('all')
         .description('Launch all applications')
         .addOption(new Option('-e, --env <dev/prod>').choices(['dev', 'prod']))
-        .addOption(new Option('-s, --status <local/fixed/released>').choices(['local', 'fixed', 'released']))
+        .addOption(new Option('-s, --status <local/fixed/released>', 'local: use dev server / fixed: deploy dev build (dist/) / released: deploy production build (build/)').choices(['local', 'fixed', 'released']))
+        .option('-y, --yes', 'skip confirmation prompt')
         .action(all);
 
     sub.command('app')
         .description('Launch several applications')
+        .option('-a, --app <name>', 'application name')
         .addOption(new Option('-e, --env <dev/prod>').choices(['dev', 'prod']))
-        .addOption(new Option('-s, --status <local/fixed/released>').choices(['local', 'fixed', 'released']))
+        .addOption(new Option('-s, --status <local/fixed/released>', 'local: use dev server / fixed: deploy dev build (dist/) / released: deploy production build (build/)').choices(['local', 'fixed', 'released']))
         .action(app);
 
 }
 
 async function all(options: AllOptions) {
 
+    if (!options.yes) {
+        const {ok} = await inq.prompt({
+            type : 'confirm',
+            name : 'ok',
+            message : `You are going to launch ${chalk.yellow('all')} applications to be a ${chalk.red("same status")}.`
+        })
 
-    const {ok} = await inq.prompt({
-        type : 'confirm',
-        name : 'ok',
-        message : `You are going to launch ${chalk.yellow('all')} applications to be a ${chalk.red("same status")}.`
-    })
-
-    if(!ok) return;
+        if(!ok) return;
+    }
 
     const prompts: Answers[] = [];
 
@@ -84,7 +88,7 @@ async function app(options: AppOptions) {
 
     const prompts: Answers[] = [];
 
-    prompts.push({
+    if (null == options.app) prompts.push({
         name: 'app',
         type: 'list',
         choices: Object.keys(customizations),
@@ -111,6 +115,11 @@ async function app(options: AppOptions) {
     const status = options.status ?? result.status;
     const appName = options.app ?? result.app;
     const custom = customizations[appName];
+
+    if (null == custom) {
+        console.error(chalk.red(`application "${appName}" not found.`));
+        return;
+    }
 
     const app = 'dev' == env ? custom.development : custom.production;
     

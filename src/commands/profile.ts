@@ -10,12 +10,22 @@ export function profileCommand() {
         .description('manage kintone profiles on your environment.')
 
     sub.command('add')
-        .option('-n --name', 'name of the profile to add.')
+        .option('-n, --name <name>', 'name of the profile to add.')
+        .option('--base-url <url>', 'kintone base URL')
+        .option('--username <username>', 'login username')
+        .option('--password <password>', 'login password')
+        .option('--basic-username <username>', 'basic auth username')
+        .option('--basic-password <password>', 'basic auth password')
         .description('add a profile of a given name.')
         .action(add);
 
     sub.command('update')
         .argument('name')
+        .option('--base-url <url>', 'kintone base URL')
+        .option('--username <username>', 'login username')
+        .option('--password <password>', 'login password')
+        .option('--basic-username <username>', 'basic auth username')
+        .option('--basic-password <password>', 'basic auth password')
         .description('update a profile of a given name.')
         .action(update);
 
@@ -92,7 +102,16 @@ async function promptData(def?: any) {
 }
 
 
-async function add(options: { name?: string }) {
+type AddOptions = {
+    name?: string;
+    baseUrl?: string;
+    username?: string;
+    password?: string;
+    basicUsername?: string;
+    basicPassword?: string;
+}
+
+async function add(options: AddOptions) {
 
     let name: string = options.name ?? '';
 
@@ -116,7 +135,20 @@ async function add(options: { name?: string }) {
         return;
     }
 
-    const result = await promptData({});
+    // CLIオプション > 環境変数 > 対話プロンプト の優先順位で解決
+    const baseUrl = options.baseUrl ?? process.env.ERAKIS_BASE_URL ?? '';
+    const username = options.username ?? process.env.ERAKIS_USERNAME ?? '';
+    const password = options.password ?? process.env.ERAKIS_PASSWORD ?? '';
+    const basicUsername = options.basicUsername ?? process.env.ERAKIS_BASIC_USERNAME ?? '';
+    const basicPassword = options.basicPassword ?? process.env.ERAKIS_BASIC_PASSWORD ?? '';
+
+    let result;
+    if (!_.isEmpty(baseUrl) && !_.isEmpty(username) && !_.isEmpty(password)) {
+        // 必須3項目が全て揃っていればpromptスキップ
+        result = { baseUrl, username, password, basicUsername, basicPassword };
+    } else {
+        result = await promptData({ baseUrl, username, password, basicUsername, basicPassword });
+    }
 
     //@ts-ignore
     storage.saveProfile({
@@ -127,7 +159,15 @@ async function add(options: { name?: string }) {
 
 }
 
-async function update(name: string) {
+type UpdateOptions = {
+    baseUrl?: string;
+    username?: string;
+    password?: string;
+    basicUsername?: string;
+    basicPassword?: string;
+}
+
+async function update(name: string, options: UpdateOptions) {
     console.log(chalk.cyan(`updating profile of ${name}`));
 
     const storage = new ProfileStorage();
@@ -139,7 +179,27 @@ async function update(name: string) {
         return;
     }
 
-    const result = await promptData(_json.profiles[name]);
+    const existing = _json.profiles[name];
+
+    // CLIオプション > 既存値
+    const baseUrl = options.baseUrl ?? existing.baseUrl;
+    const username = options.username ?? existing.username;
+    const password = options.password ?? existing.password;
+    const basicUsername = options.basicUsername ?? existing.basicUsername;
+    const basicPassword = options.basicPassword ?? existing.basicPassword;
+
+    let result;
+    if (options.baseUrl && options.username && options.password) {
+        // 必須3項目がCLI指定されていればpromptスキップ
+        result = { baseUrl, username, password, basicUsername, basicPassword };
+    } else if (options.baseUrl || options.username || options.password
+        || options.basicUsername || options.basicPassword) {
+        // 部分指定の場合はオプション値+既存値をdefaultにしてprompt
+        result = await promptData({ baseUrl, username, password, basicUsername, basicPassword });
+    } else {
+        // オプション未指定時は従来通り
+        result = await promptData(existing);
+    }
 
     //@ts-ignore
     storage.saveProfile({

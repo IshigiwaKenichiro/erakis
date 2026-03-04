@@ -19,13 +19,20 @@ export function appCommand() {
         .action(status);
     sub.command('connect')
         .description('add/connect a kintone app to be customized.')
-        .option('-n --name', 'name of the customization')
+        .option('-n, --name <name>', 'name of the customization')
+        .option('--dev-profile <profileName>', 'development profile name')
+        .option('--prod-profile <profileName>', 'production profile name')
+        .option('--dev-url <url>', 'development app URL')
+        .option('--prod-url <url>', 'production app URL')
+        .option('-y, --yes', 'skip confirmation prompts')
         .action(connect);
     sub.command('codegen')
         .description('regenerate code file on your application.')
+        .option('-a, --app <name>', 'application name')
         .action(codegen);
     sub.command('open')
         .description('show kintone')
+        .option('-a, --app <name>', 'application name')
         .action(open);
 }
 function url2ids(urlstr, profile) {
@@ -94,6 +101,30 @@ async function status() {
     });
     console.log(table.toString());
 }
+/**
+ * CLIオプションからApp情報を構築する。
+ * profileが存在しない or URL検証エラー時はnullを返す。
+ */
+function resolveEnvFromOptions(profileName, appUrl) {
+    const { profiles } = profileStorage.getData();
+    const profile = profiles[profileName];
+    if (null == profile) {
+        console.error(chalk.red(`profile "${profileName}" not found.`));
+        return null;
+    }
+    try {
+        const { errors, appId, guestSpaceId } = url2ids(appUrl, profile);
+        if (0 < errors.length) {
+            console.error(chalk.red(`invalid url: ${errors.join(', ')}`));
+            return null;
+        }
+        return { profileName: profile.name, appId, guestSpaceId, status: 'local', baseUrl: profile.baseUrl };
+    }
+    catch (e) {
+        console.error(chalk.red(`invalid url format: ${appUrl}`));
+        return null;
+    }
+}
 async function connect(options) {
     console.log('app');
     if (null == options.name) {
@@ -107,28 +138,57 @@ async function connect(options) {
     const appData = appStorage.getData();
     const customs = appData.customizations[applicationName];
     if (null != customs) {
+        if (!options.yes) {
+            const { ok } = await inq.prompt([{
+                    type: 'confirm',
+                    name: 'ok',
+                    message: `${applicationName} is already connected. Are you sure you want to refresh all settings?`
+                }]);
+            if (!ok)
+                return;
+        }
+    }
+    // dev側: オプションが全指定ならpromptスキップ
+    if ((options.devProfile && !options.devUrl) || (!options.devProfile && options.devUrl)) {
+        console.warn(chalk.yellow('warning: --dev-profile and --dev-url must be specified together. falling back to interactive prompt.'));
+    }
+    if ((options.prodProfile && !options.prodUrl) || (!options.prodProfile && options.prodUrl)) {
+        console.warn(chalk.yellow('warning: --prod-profile and --prod-url must be specified together. falling back to interactive prompt.'));
+    }
+    let development;
+    if (options.devProfile && options.devUrl) {
+        const resolved = resolveEnvFromOptions(options.devProfile, options.devUrl);
+        if (null == resolved)
+            return;
+        development = resolved;
+    }
+    else {
+        console.log(`Tell me ${chalk.green('development')} appData.`);
+        development = await promptEnv();
+        console.log();
+    }
+    // prod側: オプションが全指定ならpromptスキップ
+    let production;
+    if (options.prodProfile && options.prodUrl) {
+        const resolved = resolveEnvFromOptions(options.prodProfile, options.prodUrl);
+        if (null == resolved)
+            return;
+        production = resolved;
+    }
+    else {
+        console.log(`Tell me ${chalk.red('production')} appData.`);
+        production = await promptEnv();
+        console.log();
+    }
+    if (!options.yes) {
         const { ok } = await inq.prompt([{
                 type: 'confirm',
                 name: 'ok',
-                message: `${applicationName} is already connected. Are you sure you want to refresh all settings?`
+                message: 'Are you sure you want to connect?'
             }]);
-        if (!ok)
-            return;
-    }
-    //新規作成
-    console.log(`Tell me ${chalk.green('development')} appData.`);
-    const development = await promptEnv();
-    console.log();
-    console.log(`Tell me ${chalk.red('production')} appData.`);
-    const production = await promptEnv();
-    console.log();
-    const { ok } = await inq.prompt([{
-            type: 'confirm',
-            name: 'ok',
-            message: 'Are you sure you want to connect?'
-        }]);
-    if (!ok) {
-        return console.log(chalk.red('quit.'));
+        if (!ok) {
+            return console.log(chalk.red('quit.'));
+        }
     }
     await mergeCustomize(applicationName, development);
     console.log('kintone customization success.');
@@ -156,28 +216,42 @@ async function connect(options) {
     console.log('success. application registered.');
     console.log(chalk.green(`happy coding =b`));
 }
-async function codegen() {
+async function codegen(options) {
     const { customizations } = appStorage.getData();
-    const { applicationName } = await inq.prompt([{
-            name: 'applicationName',
-            type: 'list',
-            choices: Object.keys(customizations),
-            message: 'choose your application.'
-        }]);
+    let applicationName = options.app ?? '';
+    if (_.isEmpty(applicationName)) {
+        applicationName = (await inq.prompt([{
+                name: 'applicationName',
+                type: 'list',
+                choices: Object.keys(customizations),
+                message: 'choose your application.'
+            }])).applicationName;
+    }
+    else if (null == customizations[applicationName]) {
+        console.error(chalk.red(`application "${applicationName}" not found.`));
+        return;
+    }
     prepareTemplate(applicationName);
     prepareTest();
     prepareIndex(true);
     console.log(chalk.green('success to regenerate code files. GoodLuck :D'));
 }
-async function open() {
+async function open(options) {
     const { customizations } = appStorage.getData();
-    const { app } = await inq.prompt([{
-            type: 'list',
-            name: 'app',
-            message: 'choose application.',
-            choices: Object.values(customizations).map(c => c.appName)
-        }]);
-    const application = customizations[app];
+    let appName = options.app ?? '';
+    if (_.isEmpty(appName)) {
+        appName = (await inq.prompt([{
+                type: 'list',
+                name: 'app',
+                message: 'choose application.',
+                choices: Object.values(customizations).map(c => c.appName)
+            }])).app;
+    }
+    else if (null == customizations[appName]) {
+        console.error(chalk.red(`application "${appName}" not found.`));
+        return;
+    }
+    const application = customizations[appName];
     const url = application2url(application.development);
     exec(`start ${url}`);
 }

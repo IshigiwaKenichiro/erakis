@@ -1,5 +1,5 @@
-# Erakis
-kintoneのシンプルなカスタマイズ開発環境です。   
+# Erakis v1.1.0
+kintoneのシンプルなカスタマイズ開発環境です。
 windows対象(2024年7月時点)
 
 ## Install
@@ -48,14 +48,19 @@ npx erakis start
 
 
 ## Commands
-### init
+
+### 開発コマンド
+
+セットアップから開発・ビルド・デプロイまでの基本ワークフロー。
+
+#### init
 - npx erakis init
     - プロジェクトのセットアップ。安全な再生成。
-### genkey
+#### genkey
 - npx erakis genkey
     - HTTPSで利用する自己証明書を作成する。(localhostでソースを公開するため。)
 
-### profile
+#### profile
 - npx erakis profile add
     - kintoneアクセスデータの登録
 - npx erakis profile list
@@ -65,7 +70,7 @@ npx erakis start
 - npx erakis profile remove < profileName >
     - kintoneアクセスデータの削除
 
-### app
+#### app
 - npx erakis app connect
     - kintone上のアプリとカスタマイズの紐づけ。
 - npx erakis app status
@@ -75,31 +80,53 @@ npx erakis start
 - npx erakis app open
     - アプリを開く
 
-### start
+#### start
 - npx erakis start
     - 開発を開始する。
 
-### build
+#### build
 - npx erakis build
     - ソースコードを本番向けにビルドする。
 
-### launch
+#### launch
 - npx erakis launch app
     - kintoneアプリのカスタマイズ状態を変える（デフォルトはlocal）
 - npx erakis launch all
     - 配下のkintoneアプリのカスタマイズ状態をまとめて変える
 
-### ginue
+#### clear
+- npx erakis clear
+    - dist, buildディレクトリを削除する。
+
+---
+
+### ツール連携コマンド
+
+外部ツールとの連携や、AI支援のためのヘルパー。
+
+#### api
+- npx erakis api add
+    - API生成ターゲットの追加
+- npx erakis api list
+    - API生成ターゲットの一覧表示
+- npx erakis api remove < alias >
+    - API生成ターゲットの削除
+- npx erakis api gen
+    - 型定義ファイルの生成
+
+#### ginue
 - npx erakis ginue
     - 設定情報をもとに`.ginuerc.js`ファイルを生成する
 
-### mcp
+#### mcp
 - npx erakis mcp
     - 設定情報をもとに、`kintone-mcp-server`の`.mcp.json`を生成する
 
-### clear
-- npx erakis clear
-    - dist, buildディレクトリを削除する。
+#### guide
+- npx erakis guide
+    - AIエージェント向けのスキルセットアップガイドを表示する
+- npx erakis guide --install
+    - Skill.mdを `~/.claude/skills/erakis/` に自動インストールする
 
 
 ## license

@@ -1,0 +1,6 @@
+src/
+taskdoc/
+tsconfig.json
+.gitignore
+.cluade/
+.meeting-room/
