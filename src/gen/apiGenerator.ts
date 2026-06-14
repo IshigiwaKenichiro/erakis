@@ -4,6 +4,7 @@ import chalk from 'chalk';
 import { KintoneRestAPIClient } from '@kintone/rest-api-client';
 import type { Profile } from '../models.js';
 import type { ResolvedTarget } from '../models.js';
+import { createKintoneClient as _createKintoneClient } from '../utils/kintoneClient.js';
 
 // kintoneフィールド型 → TypeScript値型マッピング
 const FIELD_VALUE_TYPE: Record<string, string> = {
@@ -74,29 +75,7 @@ async function fetchSchema(client: KintoneRestAPIClient, appId: string): Promise
     return fields;
 }
 
-/**
- * KintoneRestAPIClientを生成
- */
-function createKintoneClient(profile: Profile): KintoneRestAPIClient {
-    const auth: Record<string, unknown> = {
-        username: profile.username,
-        password: profile.password,
-    };
-
-    const options: Record<string, unknown> = {
-        baseUrl: profile.baseUrl,
-        auth,
-    };
-
-    if (profile.basicUsername) {
-        options.basicAuth = {
-            username: profile.basicUsername,
-            password: profile.basicPassword,
-        };
-    }
-
-    return new KintoneRestAPIClient(options as any);
-}
+const createKintoneClient = (profile: Profile): KintoneRestAPIClient => _createKintoneClient(profile);
 
 /**
  * PascalCase変換（alias → 型名プレフィックス）

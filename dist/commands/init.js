@@ -28,7 +28,8 @@ export function init() {
     console.log('Initialization complete.');
     console.log(`Type ${chalk.magenta("npx erakis profile add <name-of-your-profile>")} to create profile.`);
     console.log(`Type ${chalk.cyan("npx erakis genkey")} to generate server certificate.(Needs mkcert.)`);
-    console.log(`Type ${chalk.green("npx erakis app <name-for-your-app>")} to connect kintone Application.`);
+    console.log(`Type ${chalk.green("npx erakis app connect")} to connect kintone Application (with customization files).`);
+    console.log(`Type ${chalk.green("npx erakis app register")} to register an app without customization files.`);
     console.log(`Type ${chalk.blue("npx erakis start")} to start live development server.`);
     console.log(`Type ${chalk.cyan("npx erakis build")} to build products.`);
     console.log(`Type ${chalk.yellow("npx erakis launch")} to deploy application.`);

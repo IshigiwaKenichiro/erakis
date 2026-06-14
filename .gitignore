@@ -2,3 +2,9 @@ node_modules
 /.cluade
 taskdoc
 .meeting-room
+tasks
+kintone-app/snapshots/
+kintone-app/latest.json
+.erakis
+.pack-check/
+*.tgz

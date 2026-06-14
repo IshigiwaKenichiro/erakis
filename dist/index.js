@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { program } from 'commander';
-import { appCommand } from './commands/app.js';
+import { appCommand } from './commands/app/index.js';
+import { schemaCommand } from './commands/schema/index.js';
 import { buildCommand } from './commands/build.js';
 import { clearCommand } from './commands/clear.js';
 import { genkeyCommand } from './commands/genkey.js';
@@ -17,6 +18,7 @@ import { guideCommand } from './commands/guide.js';
         .description('Erakis helps your kintone customization.');
     initCommand();
     appCommand();
+    schemaCommand();
     apiCommand();
     buildCommand();
     clearCommand();

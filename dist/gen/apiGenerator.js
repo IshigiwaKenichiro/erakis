@@ -1,7 +1,7 @@
 import path from 'path';
 import fs from 'fs-extra';
 import chalk from 'chalk';
-import { KintoneRestAPIClient } from '@kintone/rest-api-client';
+import { createKintoneClient as _createKintoneClient } from '../utils/kintoneClient.js';
 // kintoneフィールド型 → TypeScript値型マッピング
 const FIELD_VALUE_TYPE = {
     'SINGLE_LINE_TEXT': 'string',
@@ -53,26 +53,7 @@ async function fetchSchema(client, appId) {
     fields.sort((a, b) => a.code.localeCompare(b.code));
     return fields;
 }
-/**
- * KintoneRestAPIClientを生成
- */
-function createKintoneClient(profile) {
-    const auth = {
-        username: profile.username,
-        password: profile.password,
-    };
-    const options = {
-        baseUrl: profile.baseUrl,
-        auth,
-    };
-    if (profile.basicUsername) {
-        options.basicAuth = {
-            username: profile.basicUsername,
-            password: profile.basicPassword,
-        };
-    }
-    return new KintoneRestAPIClient(options);
-}
+const createKintoneClient = (profile) => _createKintoneClient(profile);
 /**
  * PascalCase変換（alias → 型名プレフィックス）
  */
