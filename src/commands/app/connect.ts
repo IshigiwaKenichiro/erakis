@@ -85,9 +85,9 @@ export async function connect(options: ConnectOptions) {
         if (!ok) return console.log(chalk.red('quit.'));
     }
 
-    prepareTemplate(applicationName);
-    prepareTest();
-    prepareIndex(true);
+    await prepareTemplate(applicationName);
+    await prepareTest();
+    await prepareIndex(true);
     console.log('template files are prepared.');
 
     await mergeCustomize(applicationName, development);

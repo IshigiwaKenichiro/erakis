@@ -10,13 +10,13 @@ export function initCommand() {
     sub.description('Initialize this project for Erakis.');
     sub.action(init);
 }
-export function init() {
+export async function init() {
     console.log('Initializing...');
     new AppStorage();
     new ProfileStorage();
     new ServerStorage();
-    prepareTest();
-    prepareIndex(true);
+    await prepareTest();
+    await prepareIndex(true);
     const packageJson = fs.readJSONSync('package.json');
     if (null != packageJson?.main) {
         console.log(`package.json#main removed. package.json#main property should not be used.`);

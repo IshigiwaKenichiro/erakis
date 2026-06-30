@@ -39,9 +39,9 @@ export async function codegen(options: { app?: string }) {
         return;
     }
 
-    prepareTemplate(applicationName);
-    prepareTest();
-    prepareIndex(true);
+    await prepareTemplate(applicationName);
+    await prepareTest();
+    await prepareIndex(true);
 
     console.log(chalk.green('success to regenerate code files. GoodLuck :D'));
 }

@@ -36,8 +36,8 @@ export async function codegen(options) {
         console.error(chalk.red(`"${applicationName}" is a register-only app. Use "erakis app connect" to set up customization source files first.`));
         return;
     }
-    prepareTemplate(applicationName);
-    prepareTest();
-    prepareIndex(true);
+    await prepareTemplate(applicationName);
+    await prepareTest();
+    await prepareIndex(true);
     console.log(chalk.green('success to regenerate code files. GoodLuck :D'));
 }

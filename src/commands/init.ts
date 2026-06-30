@@ -16,14 +16,14 @@ export function initCommand() {
     sub.action(init)
 }
 
-export function init() {
+export async function init() {
 
     console.log('Initializing...');
     new AppStorage();
     new ProfileStorage();
     new ServerStorage();
-    prepareTest();
-    prepareIndex(true);
+    await prepareTest();
+    await prepareIndex(true);
 
     const packageJson = fs.readJSONSync('package.json');
 

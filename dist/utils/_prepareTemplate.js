@@ -5,36 +5,36 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 //dist/utils
 const __dirname = path.dirname(__filename);
-export function prepareTemplate(applicationName, overwrite = false) {
+export async function prepareTemplate(applicationName, overwrite = false) {
     const dir = path.join(".", 'src', 'app', applicationName);
     if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, {
             recursive: true
         });
     }
-    fs.copy(path.join(__dirname, '..', '..', 'templates', 'app'), dir, {
+    await fs.copy(path.join(__dirname, '..', '..', 'templates', 'app'), dir, {
         overwrite
     });
 }
-export function prepareTest(overwrite = false) {
+export async function prepareTest(overwrite = false) {
     const dir = path.join(".", 'src', 'test');
     if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, {
             recursive: true
         });
     }
-    fs.copy(path.join(__dirname, '..', '..', 'templates', 'test'), dir, {
+    await fs.copy(path.join(__dirname, '..', '..', 'templates', 'test'), dir, {
         overwrite
     });
 }
-export function prepareIndex(overwrite = false) {
+export async function prepareIndex(overwrite = false) {
     const dir = path.join(".", '.erakis', 'index');
     if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, {
             recursive: true
         });
     }
-    fs.copy(path.join(__dirname, '..', '..', 'templates', 'index'), dir, {
+    await fs.copy(path.join(__dirname, '..', '..', 'templates', 'index'), dir, {
         overwrite
     });
 }
