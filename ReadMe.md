@@ -1,4 +1,4 @@
-# Erakis v1.2.0
+# Erakis
 kintoneのシンプルなカスタマイズ開発環境です。
 windows対象(2024年7月時点)
 
@@ -207,3 +207,7 @@ schema コマンドの `<appRef>` は以下の 2 形式を受け付ける。
 
 ## license
 MIT License.
+
+## 変更履歴
+
+変更内容は [CHANGELOG.md](./CHANGELOG.md) を参照してください。
