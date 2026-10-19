@@ -5,6 +5,7 @@ import { ServerStorage } from '../storage/ServerStorage.js';
 import { prepareIndex, prepareTest } from "../utils/_prepareTemplate.js";
 import chalk from "chalk";
 import fs from "fs-extra";
+import { ensureGitignore } from "../utils/gitignore.js";
 export function initCommand() {
     const sub = program.command('init');
     sub.description('Initialize this project for Erakis.');
@@ -17,6 +18,7 @@ export async function init() {
     new ServerStorage();
     await prepareTest();
     await prepareIndex(true);
+    ensureGitignore('.gitignore');
     const packageJson = fs.readJSONSync('package.json');
     if (null != packageJson?.main) {
         console.log(`package.json#main removed. package.json#main property should not be used.`);

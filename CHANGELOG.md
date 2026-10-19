@@ -6,6 +6,26 @@
 バージョン番号は [Semantic Versioning](https://semver.org/lang/ja/) に従います。
 日付は npm への公開日です。
 
+## [2.0.0] - 未公開
+
+### 追加
+
+- スクリプトから認証情報を使う `erakis/profile` を追加。`getProfile(name)` がパスワード入りのプロファイルを返す（`password` / `basicPassword` は列挙されないので `console.log` や `JSON.stringify` では出ない）
+
+### 変更
+
+- **プロファイルのパスワードを OS の資格情報ストアに保存するようにした**（Windows の資格情報マネージャー / macOS のキーチェーン / Linux の Secret Service）
+  - `~/.erakis/profiles.json` には baseUrl・username・basicUsername だけが残る
+  - 1.x で平文保存されたパスワードは、2.0.0 で初めてプロファイルを使ったときに自動で資格情報ストアへ移り、ファイルからは消える。移せなかったときは平文を残して警告を出す
+  - 資格情報ストアが使えない環境（CI など）では、環境変数 `ERAKIS_PASSWORD` / `ERAKIS_BASIC_PASSWORD` を使う。資格情報ストアが無くても、渡した値が環境変数と同じなら `profile add` はパスワード抜きで保存できる
+- `profile list` はパスワードを伏せ字で表示する
+- `profile add` / `update` のパスワード入力を伏せ字にした。`update` では空のまま Enter で今の値を残す。既存の値を画面に出さないようにした
+- `init` / `ginue` / `mcp` を実行したとき、`.gitignore` に `.ginuerc.js` と `.mcp.json` が無ければ追記する（どちらもパスワードを平文で含むため）
+
+### 互換性がなくなる変更
+
+- 2.0.0 で移したあとは、同じマシンの 1.x の erakis からはパスワードが読めず認証に失敗する。1.x に固定しているプロジェクトがあれば 2.0.0 に揃える。1.x に戻す場合は `profile update` でパスワードを入れ直す
+
 ## [1.2.1] - 2026-06-30
 
 ### 修正

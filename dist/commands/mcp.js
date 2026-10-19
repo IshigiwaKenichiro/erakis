@@ -3,6 +3,7 @@ import fs from 'fs-extra';
 import path from 'path';
 import { ProfileStorage } from '../storage/ProfileStorage.js';
 import { AppStorage } from '../storage/AppStorage.js';
+import { ensureGitignore } from '../utils/gitignore.js';
 export const mcpCommand = () => {
     program
         .command('mcp')
@@ -55,6 +56,8 @@ async function generateMcpConfig() {
     // カレントディレクトリに.mcp.jsonを出力
     const outputPath = path.join(process.cwd(), '.mcp.json');
     await fs.writeJSON(outputPath, mcpConfig, { spaces: 2 });
+    // kintone-mcp-server は平文の環境変数しか受け取れないので、せめて git に入らないようにする
+    ensureGitignore(path.join(process.cwd(), '.gitignore'));
     console.log(`📄 .mcp.json file created: ${outputPath}`);
     console.log(`🔧 Number of MCP server configurations: ${Object.keys(mcpConfig.mcpServers).length}`);
     // Display list of created environments

@@ -2,6 +2,7 @@ import { program } from 'commander';
 import chalk from 'chalk';
 import inq from 'inquirer';
 import { ProfileStorage, profFilePath } from '../storage/ProfileStorage.js';
+import type { Profile } from '../models.js';
 import _ from 'lodash';
 
 
@@ -13,9 +14,9 @@ export function profileCommand() {
         .option('-n, --name <name>', 'name of the profile to add.')
         .option('--base-url <url>', 'kintone base URL')
         .option('--username <username>', 'login username')
-        .option('--password <password>', 'login password')
+        .option('--password <password>', 'login password (left in shell history; prefer the prompt or ERAKIS_PASSWORD)')
         .option('--basic-username <username>', 'basic auth username')
-        .option('--basic-password <password>', 'basic auth password')
+        .option('--basic-password <password>', 'basic auth password (left in shell history; prefer the prompt or ERAKIS_BASIC_PASSWORD)')
         .description('add a profile of a given name.')
         .action(add);
 
@@ -23,9 +24,9 @@ export function profileCommand() {
         .argument('name')
         .option('--base-url <url>', 'kintone base URL')
         .option('--username <username>', 'login username')
-        .option('--password <password>', 'login password')
+        .option('--password <password>', 'login password (left in shell history; prefer the prompt or ERAKIS_PASSWORD)')
         .option('--basic-username <username>', 'basic auth username')
-        .option('--basic-password <password>', 'basic auth password')
+        .option('--basic-password <password>', 'basic auth password (left in shell history; prefer the prompt or ERAKIS_BASIC_PASSWORD)')
         .description('update a profile of a given name.')
         .action(update);
 
@@ -41,16 +42,16 @@ export function profileCommand() {
 
 }
 
-async function promptData(def?: any) {
-    console.log(def);
+type PromptDefaults = Partial<Omit<Profile, 'name'>>;
 
-    const {
-        baseUrl
-        , username
-        , password
-        , basicUsername
-        , basicPassword
-    } = await inq.prompt([
+// 既存の値は画面に出さない。空のまま Enter なら今の値を使う
+const KEEP_CURRENT = ' (leave empty to keep current)';
+
+async function promptData(def: PromptDefaults) {
+    const hasPassword = !_.isEmpty(def.password);
+    const hasBasicPassword = !_.isEmpty(def.basicPassword);
+
+    const answers = await inq.prompt([
         {
             name: 'baseUrl',
             default: def.baseUrl ?? '',
@@ -71,11 +72,11 @@ async function promptData(def?: any) {
         },
         {
             name: 'password',
-            default: def.password ?? '',
-            message: 'your password',
-            type: 'input',
+            message: `your password${hasPassword ? KEEP_CURRENT : ''}`,
+            type: 'password',
+            mask: '*',
             validate: (input) => {
-                return _.isEmpty(input) ? false : true
+                return hasPassword || !_.isEmpty(input)
             }
         },
         {
@@ -86,18 +87,18 @@ async function promptData(def?: any) {
         },
         {
             name: 'basicPassword',
-            default: def.basicPassword ?? '',
-            message: 'your basic password (not required)',
-            type: 'input',
+            message: `your basic password (not required)${hasBasicPassword ? KEEP_CURRENT : ''}`,
+            type: 'password',
+            mask: '*',
         }
     ]);
 
     return {
-        baseUrl
-        , username
-        , password
-        , basicUsername
-        , basicPassword
+        baseUrl: answers.baseUrl as string,
+        username: answers.username as string,
+        password: (answers.password || def.password || '') as string,
+        basicUsername: (answers.basicUsername ?? '') as string,
+        basicPassword: (answers.basicPassword || def.basicPassword || '') as string,
     }
 }
 
@@ -150,10 +151,7 @@ async function add(options: AddOptions) {
         result = await promptData({ baseUrl, username, password, basicUsername, basicPassword });
     }
 
-    //@ts-ignore
-    storage.saveProfile({
-        name, ...result
-    })
+    if (!save(storage, { name, ...result })) return;
 
     console.log(`profile ${name} created.`);
 
@@ -201,14 +199,27 @@ async function update(name: string, options: UpdateOptions) {
         result = await promptData(existing);
     }
 
-    //@ts-ignore
-    storage.saveProfile({
-        name, ...result
-    })
+    if (!save(storage, { name, ...result })) return;
 
     console.log(`profile ${name} updated.`);
 }
 
+
+function save(storage: ProfileStorage, profile: Profile): boolean {
+    try {
+        storage.saveProfile(profile);
+        return true;
+    } catch (error) {
+        console.error(chalk.red(error instanceof Error ? error.message : String(error)));
+        process.exitCode = 1;
+        return false;
+    }
+}
+
+// 画面やログ・AI のコンテキストに残さないよう、有無だけを見せる
+function maskSecret(secret: string): string {
+    return _.isEmpty(secret) ? '(not set)' : '********';
+}
 
 async function remove(name: string) {
     console.log(chalk.cyan(`removing profile of ${name}`));
@@ -239,9 +250,9 @@ async function list() {
 profile ${chalk.blue(profile.name)}
     base-url : ${chalk.red(profile.baseUrl)}
     username : ${chalk.green(profile.username)}
-    password : ${chalk.green(profile.password)}
+    password : ${chalk.green(maskSecret(profile.password))}
     basicUsername : ${chalk.yellow(profile.basicUsername)}
-    basicPassword : ${chalk.yellow(profile.basicPassword)}
+    basicPassword : ${chalk.yellow(maskSecret(profile.basicPassword))}
             `.trim())
     });
 
@@ -249,6 +260,6 @@ profile ${chalk.blue(profile.name)}
         console.log(chalk.red('no data.'));
     }
 
-    console.log(`profile saved at ${chalk.yellow(profFilePath)}`)
+    console.log(`profile saved at ${chalk.yellow(profFilePath)} (passwords are kept in the OS credential store)`)
 }
 

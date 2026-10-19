@@ -6,6 +6,7 @@ import { prepareIndex, prepareTemplate, prepareTest } from "../utils/_prepareTem
 import inquirer from "inquirer";
 import chalk from "chalk";
 import fs from "fs-extra";
+import { ensureGitignore } from "../utils/gitignore.js";
 
 
 export function initCommand() {
@@ -24,6 +25,7 @@ export async function init() {
     new ServerStorage();
     await prepareTest();
     await prepareIndex(true);
+    ensureGitignore('.gitignore');
 
     const packageJson = fs.readJSONSync('package.json');
 

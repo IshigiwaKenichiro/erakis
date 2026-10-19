@@ -69,6 +69,14 @@ npx erakis start
     - kintoneアクセスデータの更新
 - npx erakis profile remove < profileName >
     - kintoneアクセスデータの削除
+- パスワードは OS の資格情報ストア（Windows の資格情報マネージャー / macOS のキーチェーン / Linux の Secret Service）に保存され、`~/.erakis/profiles.json` には残らない
+    - 資格情報ストアが使えない環境（CI など）では `ERAKIS_PASSWORD` / `ERAKIS_BASIC_PASSWORD` を使う
+- スクリプトから認証情報を使うときは `erakis/profile` を import する（プロジェクトに erakis を devDependency で入れる）
+    ```ts
+    import { getProfile } from 'erakis/profile';
+    const profile = getProfile('dev'); // baseUrl / username / password / basicUsername / basicPassword
+    ```
+    - `password` / `basicPassword` は列挙されないので、`console.log(profile)` や `JSON.stringify(profile)` では出ない
 
 #### app
 - npx erakis app connect
@@ -193,10 +201,12 @@ schema コマンドの `<appRef>` は以下の 2 形式を受け付ける。
 #### ginue
 - npx erakis ginue
     - 設定情報をもとに`.ginuerc.js`ファイルを生成する
+    - ginue の仕様上パスワードが平文で入るため、`.gitignore` に`.ginuerc.js`を追記する
 
 #### mcp
 - npx erakis mcp
     - 設定情報をもとに、`kintone-mcp-server`の`.mcp.json`を生成する
+    - kintone-mcp-server の仕様上パスワードが平文で入るため、`.gitignore` に`.mcp.json`を追記する
 
 #### guide
 - npx erakis guide
