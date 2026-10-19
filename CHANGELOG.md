@@ -6,7 +6,7 @@
 バージョン番号は [Semantic Versioning](https://semver.org/lang/ja/) に従います。
 日付は npm への公開日です。
 
-## [2.0.0] - 未公開
+## [2.0.0] - 2026-10-19
 
 ### 追加
 
