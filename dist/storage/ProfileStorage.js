@@ -109,6 +109,14 @@ export class ProfileStorage {
             this.secrets.set(account(name, kind), secret);
         }
         catch (error) {
+            // ストアの無い環境では、消すべき項目も無い
+            if (_.isEmpty(secret))
+                return;
+            // CI など: 環境変数で渡されている値なら、読むときも環境変数から取れるので保存しなくてよい
+            if (secret === process.env[SECRET_ENV[kind]]) {
+                console.warn(`[erakis] no OS credential store. ${kind} of profile "${name}" will be read from ${SECRET_ENV[kind]}.`);
+                return;
+            }
             const reason = error instanceof Error ? error.message : String(error);
             throw new Error(`could not store ${kind} of profile "${name}" in the OS credential store: ${reason}\n`
                 + `If no credential store is available (CI etc.), set ${SECRET_ENV[kind]} instead of saving it.`);

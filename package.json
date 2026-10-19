@@ -13,7 +13,7 @@
   ],
   "scripts": {
     "clean": "node -e \"require('fs').rmSync('./dist',{recursive:true,force:true})\"",
-    "build": "npm run clean && tsc",
+    "build": "npm run clean && tsc && tsc -p tsconfig.lib.json",
     "watch": "tsc -w",
     "test": "mocha"
   },
@@ -51,5 +51,12 @@
     "type": "git",
     "url": "git+https://github.com/IshigiwaKenichiro/erakis.git"
   },
-  "homepage": "https://github.com/IshigiwaKenichiro/erakis"
+  "homepage": "https://github.com/IshigiwaKenichiro/erakis",
+  "exports": {
+    "./profile": {
+      "types": "./dist/profile.d.ts",
+      "default": "./dist/profile.js"
+    },
+    "./package.json": "./package.json"
+  }
 }

@@ -92,6 +92,24 @@ describe('ProfileStorage', () => {
         expect(fs.readJSONSync(file).profiles).to.deep.equal({});
     });
 
+    it('ストアが無くても ERAKIS_PASSWORD と同じ値ならパスワード抜きで保存し、読むときは環境変数を使う', () => {
+        const broken = new MemorySecretStore();
+        broken.set = () => { throw new Error('no keyring'); };
+        broken.delete = () => { throw new Error('no keyring'); };
+        broken.get = () => { throw new Error('no keyring'); };
+        const storage = new ProfileStorage({ file, secrets: broken });
+
+        process.env.ERAKIS_PASSWORD = 'secret-pass';
+        try {
+            storage.saveProfile({ ...PROFILE, basicUsername: '', basicPassword: '' });
+
+            expect(fs.readFileSync(file, 'utf8')).to.not.include('secret-pass');
+            expect(storage.getData().profiles.dev.password).to.equal('secret-pass');
+        } finally {
+            delete process.env.ERAKIS_PASSWORD;
+        }
+    });
+
     it('removeProfile はストアの項目も消す', () => {
         const secrets = new MemorySecretStore();
         const storage = new ProfileStorage({ file, secrets });

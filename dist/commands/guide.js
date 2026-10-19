@@ -32,7 +32,7 @@ npx erakis init
 \`\`\`bash
 npx erakis genkey
 \`\`\`
-3. プロファイル作成（kintone接続情報の登録）
+3. プロファイル作成（kintone接続情報の登録。パスワードを入れるのはユーザーなので、実行を依頼する）
 \`\`\`bash
 # インタラクティブ入力
 npx erakis profile add
@@ -139,6 +139,28 @@ npx erakis profile update <name> --base-url <url> --username <user> --password <
 # 削除
 npx erakis profile remove <name>
 \`\`\`
+
+#### 認証情報の扱い
+- パスワードは OS の資格情報ストアに保存され、\`~/.erakis/profiles.json\` には入っていない。erakis のコマンドはプロファイル名を渡すだけで認証する
+- **パスワードを入力するのはユーザー。** AI がパスワードを聞き出したり、\`--password\` に書いたりしない。プロファイルが無ければ \`npx erakis profile add\` の実行をユーザーに依頼する
+- 資格情報ストアが無い環境（CI など）では \`ERAKIS_PASSWORD\` / \`ERAKIS_BASIC_PASSWORD\` を使う
+- \`.ginuerc.js\` と \`.mcp.json\` には、ginue・kintone-mcp-server の仕様上パスワードが平文で入る。読まない・出力しない・コミットしない
+
+#### スクリプトから認証情報を使う
+Node.js のスクリプトで kintone に繋ぐときは、パスワードを書かずに \`erakis/profile\` から受け取る（プロジェクトに erakis が devDependency で入っている必要がある）。
+\`\`\`ts
+import { getProfile } from 'erakis/profile';
+import { KintoneRestAPIClient } from '@kintone/rest-api-client';
+
+const profile = getProfile('dev');
+const client = new KintoneRestAPIClient({
+    baseUrl: profile.baseUrl,
+    auth: { username: profile.username, password: profile.password },
+    // 基本認証があるとき: basicAuth: { username: profile.basicUsername, password: profile.basicPassword },
+});
+\`\`\`
+- \`password\` / \`basicPassword\` は列挙されないので \`console.log(profile)\` では出ない。\`profile.password\` を出力・保存するコードは書かない
+- 接続にどのクライアントを使うかは自由（erakis は認証情報を渡すだけ）
 
 ### \`open\`
 kintoneアプリをブラウザで開く。

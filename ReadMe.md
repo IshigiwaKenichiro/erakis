@@ -71,6 +71,12 @@ npx erakis start
     - kintoneアクセスデータの削除
 - パスワードは OS の資格情報ストア（Windows の資格情報マネージャー / macOS のキーチェーン / Linux の Secret Service）に保存され、`~/.erakis/profiles.json` には残らない
     - 資格情報ストアが使えない環境（CI など）では `ERAKIS_PASSWORD` / `ERAKIS_BASIC_PASSWORD` を使う
+- スクリプトから認証情報を使うときは `erakis/profile` を import する（プロジェクトに erakis を devDependency で入れる）
+    ```ts
+    import { getProfile } from 'erakis/profile';
+    const profile = getProfile('dev'); // baseUrl / username / password / basicUsername / basicPassword
+    ```
+    - `password` / `basicPassword` は列挙されないので、`console.log(profile)` や `JSON.stringify(profile)` では出ない
 
 #### app
 - npx erakis app connect
