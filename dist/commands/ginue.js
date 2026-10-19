@@ -4,6 +4,7 @@ import * as path from 'path';
 import * as readline from 'readline';
 import { AppStorage } from '../storage/AppStorage.js';
 import { ProfileStorage } from '../storage/ProfileStorage.js';
+import { ensureGitignore } from '../utils/gitignore.js';
 export const ginueCommand = () => {
     program.command('ginue')
         .description('Generate ginue config file (.ginuerc.js)')
@@ -36,6 +37,8 @@ async function createGinueRc() {
     const profileData = profileStorage.getData();
     const config = generateGinueConfig(appData.customizations, profileData.profiles);
     fs.writeFileSync(configPath, config, 'utf8');
+    // ginue は .ginuerc.js の平文しか読めないので、せめて git に入らないようにする
+    ensureGitignore(path.join(process.cwd(), '.gitignore'));
 }
 async function askOverwrite() {
     const rl = readline.createInterface({

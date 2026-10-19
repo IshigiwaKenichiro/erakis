@@ -10,18 +10,18 @@ export function profileCommand() {
         .option('-n, --name <name>', 'name of the profile to add.')
         .option('--base-url <url>', 'kintone base URL')
         .option('--username <username>', 'login username')
-        .option('--password <password>', 'login password')
+        .option('--password <password>', 'login password (left in shell history; prefer the prompt or ERAKIS_PASSWORD)')
         .option('--basic-username <username>', 'basic auth username')
-        .option('--basic-password <password>', 'basic auth password')
+        .option('--basic-password <password>', 'basic auth password (left in shell history; prefer the prompt or ERAKIS_BASIC_PASSWORD)')
         .description('add a profile of a given name.')
         .action(add);
     sub.command('update')
         .argument('name')
         .option('--base-url <url>', 'kintone base URL')
         .option('--username <username>', 'login username')
-        .option('--password <password>', 'login password')
+        .option('--password <password>', 'login password (left in shell history; prefer the prompt or ERAKIS_PASSWORD)')
         .option('--basic-username <username>', 'basic auth username')
-        .option('--basic-password <password>', 'basic auth password')
+        .option('--basic-password <password>', 'basic auth password (left in shell history; prefer the prompt or ERAKIS_BASIC_PASSWORD)')
         .description('update a profile of a given name.')
         .action(update);
     sub.command('remove')
@@ -32,9 +32,12 @@ export function profileCommand() {
         .description('list all profiles.')
         .action(list);
 }
+// 既存の値は画面に出さない。空のまま Enter なら今の値を使う
+const KEEP_CURRENT = ' (leave empty to keep current)';
 async function promptData(def) {
-    console.log(def);
-    const { baseUrl, username, password, basicUsername, basicPassword } = await inq.prompt([
+    const hasPassword = !_.isEmpty(def.password);
+    const hasBasicPassword = !_.isEmpty(def.basicPassword);
+    const answers = await inq.prompt([
         {
             name: 'baseUrl',
             default: def.baseUrl ?? '',
@@ -55,11 +58,11 @@ async function promptData(def) {
         },
         {
             name: 'password',
-            default: def.password ?? '',
-            message: 'your password',
-            type: 'input',
+            message: `your password${hasPassword ? KEEP_CURRENT : ''}`,
+            type: 'password',
+            mask: '*',
             validate: (input) => {
-                return _.isEmpty(input) ? false : true;
+                return hasPassword || !_.isEmpty(input);
             }
         },
         {
@@ -70,17 +73,17 @@ async function promptData(def) {
         },
         {
             name: 'basicPassword',
-            default: def.basicPassword ?? '',
-            message: 'your basic password (not required)',
-            type: 'input',
+            message: `your basic password (not required)${hasBasicPassword ? KEEP_CURRENT : ''}`,
+            type: 'password',
+            mask: '*',
         }
     ]);
     return {
-        baseUrl,
-        username,
-        password,
-        basicUsername,
-        basicPassword
+        baseUrl: answers.baseUrl,
+        username: answers.username,
+        password: (answers.password || def.password || ''),
+        basicUsername: (answers.basicUsername ?? ''),
+        basicPassword: (answers.basicPassword || def.basicPassword || ''),
     };
 }
 async function add(options) {
@@ -113,10 +116,8 @@ async function add(options) {
     else {
         result = await promptData({ baseUrl, username, password, basicUsername, basicPassword });
     }
-    //@ts-ignore
-    storage.saveProfile({
-        name, ...result
-    });
+    if (!save(storage, { name, ...result }))
+        return;
     console.log(`profile ${name} created.`);
 }
 async function update(name, options) {
@@ -148,11 +149,24 @@ async function update(name, options) {
         // オプション未指定時は従来通り
         result = await promptData(existing);
     }
-    //@ts-ignore
-    storage.saveProfile({
-        name, ...result
-    });
+    if (!save(storage, { name, ...result }))
+        return;
     console.log(`profile ${name} updated.`);
+}
+function save(storage, profile) {
+    try {
+        storage.saveProfile(profile);
+        return true;
+    }
+    catch (error) {
+        console.error(chalk.red(error instanceof Error ? error.message : String(error)));
+        process.exitCode = 1;
+        return false;
+    }
+}
+// 画面やログ・AI のコンテキストに残さないよう、有無だけを見せる
+function maskSecret(secret) {
+    return _.isEmpty(secret) ? '(not set)' : '********';
 }
 async function remove(name) {
     console.log(chalk.cyan(`removing profile of ${name}`));
@@ -174,13 +188,13 @@ async function list() {
 profile ${chalk.blue(profile.name)}
     base-url : ${chalk.red(profile.baseUrl)}
     username : ${chalk.green(profile.username)}
-    password : ${chalk.green(profile.password)}
+    password : ${chalk.green(maskSecret(profile.password))}
     basicUsername : ${chalk.yellow(profile.basicUsername)}
-    basicPassword : ${chalk.yellow(profile.basicPassword)}
+    basicPassword : ${chalk.yellow(maskSecret(profile.basicPassword))}
             `.trim());
     });
     if (0 == Object.values(profiles).length) {
         console.log(chalk.red('no data.'));
     }
-    console.log(`profile saved at ${chalk.yellow(profFilePath)}`);
+    console.log(`profile saved at ${chalk.yellow(profFilePath)} (passwords are kept in the OS credential store)`);
 }

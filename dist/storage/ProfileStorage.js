@@ -1,34 +1,155 @@
 import path from 'path';
 import fs from 'fs-extra';
+import _ from 'lodash';
+import { KeyringSecretStore } from './SecretStore.js';
+const SECRET_KINDS = ['password', 'basicPassword'];
+// 資格情報ストアが使えない環境（CI や Secret Service の無い Linux）向けの逃げ道
+const SECRET_ENV = {
+    password: 'ERAKIS_PASSWORD',
+    basicPassword: 'ERAKIS_BASIC_PASSWORD',
+};
+// 自分のアカウント以外から読めないようにする（Windows では効かないが害もない）
+const FILE_MODE = 0o600;
 const userHome = process.env[process.platform == "win32" ? "USERPROFILE" : "HOME"] ?? '';
 const homeDir = path.join(userHome, '.erakis');
 const profFile = path.join(homeDir, 'profiles.json');
 export class ProfileStorage {
-    constructor() {
-        if (!fs.existsSync(homeDir)) {
-            fs.mkdirSync(homeDir, { recursive: true });
+    file;
+    secrets;
+    migrated = false;
+    constructor(options = {}) {
+        this.file = options.file ?? profFile;
+        this.secrets = options.secrets ?? new KeyringSecretStore();
+        const dir = path.dirname(this.file);
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
         }
-        if (!fs.existsSync(profFile)) {
-            fs.writeJSONSync(profFile, {
-                profiles: {}
-            }, {
-                spaces: '\t'
-            });
+        if (!fs.existsSync(this.file)) {
+            this.writeRaw({ profiles: {} });
         }
     }
     saveProfile(profile) {
-        const json = this.getData();
-        json.profiles[profile.name] = profile;
-        fs.writeJSONSync(profFile, json, { spaces: '\t' });
+        const json = this.readRaw();
+        // 先にストアへ書く。失敗したらファイルは触らず、平文が残る状態を作らない
+        for (const kind of SECRET_KINDS) {
+            this.writeSecret(profile.name, kind, profile[kind]);
+        }
+        json.profiles[profile.name] = {
+            name: profile.name,
+            baseUrl: profile.baseUrl,
+            username: profile.username,
+            basicUsername: profile.basicUsername,
+        };
+        this.writeRaw(json);
     }
     removeProfile(name) {
-        const json = this.getData();
+        const json = this.readRaw();
         delete json.profiles[name];
-        fs.writeJSONSync(profFile, json, { spaces: '\t' });
+        this.writeRaw(json);
+        for (const kind of SECRET_KINDS) {
+            try {
+                this.secrets.delete(account(name, kind));
+            }
+            catch {
+                // ストアに無い・使えないなら消すものも無い
+            }
+        }
     }
     getData() {
-        const json = fs.readJSONSync(profFile);
-        return json;
+        // import 時に new されるモジュールがあるので、移行はコンストラクタではなく実際に使うときに行う
+        if (!this.migrated) {
+            this.migratePlainSecrets();
+            this.migrated = true;
+        }
+        const json = this.readRaw();
+        const profiles = _.mapValues(json.profiles, stored => this.withSecrets(stored));
+        return { profiles };
     }
+    /**
+     * パスワードはアクセスされたときだけストアから読む。
+     * 列挙されないプロパティにして、console.log や JSON.stringify でうっかり出ないようにする。
+     */
+    withSecrets(stored) {
+        const profile = {
+            name: stored.name,
+            baseUrl: stored.baseUrl,
+            username: stored.username,
+            basicUsername: stored.basicUsername,
+        };
+        for (const kind of SECRET_KINDS) {
+            let cache;
+            Object.defineProperty(profile, kind, {
+                enumerable: false,
+                get: () => {
+                    cache ??= this.readSecret(stored, kind);
+                    return cache;
+                },
+            });
+        }
+        return profile;
+    }
+    readSecret(stored, kind) {
+        try {
+            const secret = this.secrets.get(account(stored.name, kind));
+            if (secret != null)
+                return secret;
+        }
+        catch {
+            // ストアが使えない環境では下の逃げ道へ
+        }
+        // 移行に失敗して平文が残っているときは、それで動かし続ける
+        return stored[kind] ?? process.env[SECRET_ENV[kind]] ?? '';
+    }
+    writeSecret(name, kind, secret) {
+        try {
+            if (_.isEmpty(secret)) {
+                this.secrets.delete(account(name, kind));
+                return;
+            }
+            this.secrets.set(account(name, kind), secret);
+        }
+        catch (error) {
+            const reason = error instanceof Error ? error.message : String(error);
+            throw new Error(`could not store ${kind} of profile "${name}" in the OS credential store: ${reason}\n`
+                + `If no credential store is available (CI etc.), set ${SECRET_ENV[kind]} instead of saving it.`);
+        }
+    }
+    /** 1.2 系までに平文で保存されたパスワードを資格情報ストアへ移し、ファイルから消す */
+    migratePlainSecrets() {
+        const json = this.readRaw();
+        const migrated = [];
+        for (const stored of Object.values(json.profiles)) {
+            if (!SECRET_KINDS.some(kind => kind in stored))
+                continue;
+            try {
+                for (const kind of SECRET_KINDS) {
+                    this.writeSecret(stored.name, kind, stored[kind]);
+                }
+            }
+            catch (error) {
+                // 移せないまま消すとパスワードを失うので、平文のまま残して知らせる
+                const reason = error instanceof Error ? error.message : String(error);
+                console.warn(`[erakis] profile "${stored.name}" still has a plaintext password in ${this.file}. ${reason}`);
+                continue;
+            }
+            for (const kind of SECRET_KINDS) {
+                delete stored[kind];
+            }
+            migrated.push(stored.name);
+        }
+        if (migrated.length === 0)
+            return;
+        this.writeRaw(json);
+        console.warn(`[erakis] moved passwords of profile ${migrated.join(', ')} to the OS credential store.`);
+    }
+    readRaw() {
+        return fs.readJSONSync(this.file);
+    }
+    writeRaw(json) {
+        fs.writeJSONSync(this.file, json, { spaces: '\t', mode: FILE_MODE });
+    }
+}
+function account(name, kind) {
+    return `${name}/${kind}`;
 }
 export const profFilePath = profFile;
