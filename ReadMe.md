@@ -132,8 +132,14 @@ schema コマンドの `<appRef>` は以下の 2 形式を受け付ける。
 - npx erakis schema create \[spaceIdOrGuestSpaceId\]
     - 空の kintone アプリを作成する。引数省略時はスペースなし、数値ID指定時は通常スペースに作成。
     - `--guest-space` を付けるとゲストスペース用エンドポイントを使用する（スペースID＝ゲストスペースIDの場合）。
+    - `--name <name>` でアプリ名を付ける（省略時は `erakis app`）。
     - `--profile <name>` でプロファイル指定。`-y` で確認プロンプト省略。
     - 作成後は `.erakis/apps.json` への登録は行わない。`app register` / `app connect` で管理下に追加する。
+
+#### アプリ名の変更
+- npx erakis schema rename \<appRef\> \<name\>
+    - kintone のアプリ名を変える。preview に書くだけなので、`schema deploy` で本番へ反映する
+    - 名前は 1〜64 文字。確認プロンプトあり（`-y` で省略）
 
 #### スナップショット
 - npx erakis schema pull
@@ -197,6 +203,24 @@ schema コマンドの `<appRef>` は以下の 2 形式を受け付ける。
     - API生成ターゲットの削除
 - npx erakis api gen
     - 型定義ファイルの生成
+
+#### search
+- npx erakis search \<keywords...\>
+    - kintone を横断検索する（レコード・コメント・スペース・スレッド・ピープル・メッセージ・添付ファイル）。`/k/v1/search.json` を使う
+    - パスワード認証で動く（search.json は API トークンを受け付けない）。プロファイルが複数あるときは `--profile <name>` を付ける
+    - 位置引数のキーワードは1つの AND 条件になる。`--and` / `--or` / `--not <kw,kw>` を指定するたびに条件が1つ増える
+    - 絞り込み: `--type`・`--app` / `--space` / `--people` / `--message`（値を省くとその種類のすべて）・`--exclude-*`・`--creator`・`--after` / `--before`・`--synonyms`
+    - 値を省ける範囲オプションはすぐ後ろの語を値として読む。キーワードは先に書く（`search 見積 --app` は全アプリ、`search --app 見積` は「見積」をアプリIDとして読んでエラーになる）
+    - 並び順: `--sort relevance|created`・`--order asc|desc`（asc は `--sort created` のときだけ）
+    - ページ: `--limit 1〜20`・`--page-token <token>`・`--all`（続きをすべて取る。最大50ページ）
+    - ゲストスペース: `--guest-space`（参加しているすべて）・`--guest-space <id>`
+    - 既定は表で表示する。`--json` でレスポンスの JSON をそのまま出す
+
+```bash
+npx erakis search 見積 承認
+npx erakis search --or 見積,請求 --not 下書き --type record,attachment
+npx erakis search 見積 --app 12,34 --sort created --order asc --all --json
+```
 
 #### ginue
 - npx erakis ginue

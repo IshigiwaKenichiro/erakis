@@ -13,6 +13,7 @@ import { ginueCommand } from './commands/ginue.js';
 import { mcpCommand } from './commands/mcp.js';
 import { apiCommand } from './commands/api.js';
 import { guideCommand } from './commands/guide.js';
+import { searchCommand } from './commands/search.js';
 (() => {
     program.name('erakis')
         .description('Erakis helps your kintone customization.');
@@ -20,6 +21,7 @@ import { guideCommand } from './commands/guide.js';
     appCommand();
     schemaCommand();
     apiCommand();
+    searchCommand();
     buildCommand();
     clearCommand();
     genkeyCommand();

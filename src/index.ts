@@ -13,6 +13,7 @@ import { ginueCommand } from './commands/ginue.js';
 import { mcpCommand } from './commands/mcp.js';
 import { apiCommand } from './commands/api.js';
 import { guideCommand } from './commands/guide.js';
+import { searchCommand } from './commands/search.js';
 
 
 (() => {
@@ -24,6 +25,7 @@ import { guideCommand } from './commands/guide.js';
     appCommand();
     schemaCommand();
     apiCommand();
+    searchCommand();
     buildCommand();
     clearCommand();
     genkeyCommand();
@@ -35,4 +37,4 @@ import { guideCommand } from './commands/guide.js';
     guideCommand();
     program.parse(process.argv);
 
-})();
+})();

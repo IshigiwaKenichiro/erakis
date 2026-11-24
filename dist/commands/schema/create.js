@@ -2,6 +2,7 @@ import chalk from 'chalk';
 import inq from 'inquirer';
 import { profileStorage } from '../_shared/helpers.js';
 import { createKintoneClient } from '../../utils/kintoneClient.js';
+import { DEFAULT_APP_NAME, validateAppName } from './rename.js';
 /**
  * spaceRef 文字列を単一の数値 ID に解析する純粋関数。
  * 省略・空文字は { id: undefined }。スラッシュ形式・非数値は null を返す。
@@ -33,7 +34,7 @@ export function resolveProfileForCreate(allProfileNames, profileHint) {
     return { error: 'multiple profiles found. specify --profile <name>.' };
 }
 /**
- * `erakis schema create` — 空の kintone アプリを作成する。
+ * `erakis schema create` — 空の kintone アプリを作成する。--name でアプリ名を付けられる（省略時は "erakis app"）。
  * --guest-space を付けるとゲストスペース用エンドポイントを使用する。
  * .erakis/apps.json への登録は行わない。作成後は app register / app connect を使うこと。
  */
@@ -41,6 +42,12 @@ export async function schemaCreate(spaceIdOrGuestSpaceId, options) {
     const parsed = parseSpaceRef(spaceIdOrGuestSpaceId);
     if (parsed === null) {
         console.error(chalk.red(`invalid ID "${spaceIdOrGuestSpaceId}". expected a single numeric space or guest-space ID.`));
+        return;
+    }
+    const appName = options.name ?? DEFAULT_APP_NAME;
+    const nameError = validateAppName(appName);
+    if (nameError) {
+        console.error(chalk.red(nameError));
         return;
     }
     const { profiles } = profileStorage.getData();
@@ -57,6 +64,7 @@ export async function schemaCreate(spaceIdOrGuestSpaceId, options) {
     if (!options.yes) {
         const parts = [
             `profile: ${profileResult.profileName}`,
+            `name: ${appName}`,
             parsed.id ? `space ID: ${parsed.id}` : 'no space',
             parsed.id && options.guestSpace ? 'guest-space' : null,
         ].filter(Boolean).join(', ');
@@ -73,7 +81,7 @@ export async function schemaCreate(spaceIdOrGuestSpaceId, options) {
     // 通常スペースには渡してはならない。
     const guestSpaceId = parsed.id && options.guestSpace ? parsed.id : undefined;
     const client = createKintoneClient(profile, { guestSpaceId });
-    const params = { name: 'erakis app' };
+    const params = { name: appName };
     if (parsed.id)
         params.space = Number(parsed.id);
     const result = await client.app.addApp(params);

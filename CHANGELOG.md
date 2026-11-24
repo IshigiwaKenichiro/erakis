@@ -6,6 +6,14 @@
 バージョン番号は [Semantic Versioning](https://semver.org/lang/ja/) に従います。
 日付は npm への公開日です。
 
+## [2.1.0]
+
+### 追加
+
+- `erakis search` を追加。kintone の横断検索（`/k/v1/search.json`）で、レコード・コメント・スペース・スレッド・ピープル・メッセージ・添付ファイルを探せる。検索条件・種類・範囲・除外範囲・作成者・期間・同義語・並び順・ページ送りをすべてオプションで指定できる。既定では表で表示し、`--json` を付けると JSON を出す
+- `erakis schema rename <appRef> <name>` を追加。kintone のアプリ名を preview に書き、`schema deploy` で反映する
+- `erakis schema create` に `--name` を追加。作成するアプリの名前を付けられる（省略時は従来どおり `erakis app`）
+
 ## [2.0.0] - 2026-10-19
 
 ### 追加
