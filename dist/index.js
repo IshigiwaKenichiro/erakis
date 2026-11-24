@@ -1,35 +1,7 @@
 #!/usr/bin/env node
 import { program } from 'commander';
-import { appCommand } from './commands/app/index.js';
-import { schemaCommand } from './commands/schema/index.js';
-import { buildCommand } from './commands/build.js';
-import { clearCommand } from './commands/clear.js';
-import { genkeyCommand } from './commands/genkey.js';
-import { launchCommand } from './commands/launch.js';
-import { profileCommand } from './commands/profile.js';
-import { startCommand } from './commands/start.js';
-import { initCommand } from './commands/init.js';
-import { ginueCommand } from './commands/ginue.js';
-import { mcpCommand } from './commands/mcp.js';
-import { apiCommand } from './commands/api.js';
-import { guideCommand } from './commands/guide.js';
-import { searchCommand } from './commands/search.js';
+import { registerCommands } from './commands/registerCommands.js';
 (() => {
-    program.name('erakis')
-        .description('Erakis helps your kintone customization.');
-    initCommand();
-    appCommand();
-    schemaCommand();
-    apiCommand();
-    searchCommand();
-    buildCommand();
-    clearCommand();
-    genkeyCommand();
-    launchCommand();
-    profileCommand();
-    startCommand();
-    ginueCommand();
-    mcpCommand();
-    guideCommand();
+    registerCommands();
     program.parse(process.argv);
 })();

@@ -6,6 +6,25 @@
 バージョン番号は [Semantic Versioning](https://semver.org/lang/ja/) に従います。
 日付は npm への公開日です。
 
+## [2.1.1]
+
+### 変更
+
+- `guide --install` は、インストール済みの Skill.md がこの版の erakis の原本と違うとき、上書きせずに止まるようにした。`--force` を付けると `Skill.md.bak` に退避してから上書きする
+- `guide` は、インストール済みの Skill.md が原本と同じか違うかを表示するようにした。「schema コマンドが追加された場合は再インストールを推奨」という案内はやめた
+
+### 修正
+
+- Skill.md のプロジェクト構造を、erakis が実際に探す `src/app/<appName>/customize.desktop.ts` などに直した
+- Skill.md と `guide` から、パスワードをコマンドの引数で渡す例を外した。パスワードは対話入力か `ERAKIS_PASSWORD` / `ERAKIS_BASIC_PASSWORD` で渡す
+- 権限設定の案内を、古い `allowedTools` から `permissions.allow` に直した。プロジェクトの `.claude/settings.json` に置く方法も書いた
+- Skill.md に、`-e` / `--env` / `--to` の `dev` / `prod` は環境の名前ではなく、登録した2つの接続先の切り替えだという注意を足した
+- Skill.md に `app codegen` の節を足した
+
+### その他
+
+- 登録したコマンドが `guide` の全コマンド一覧と Skill.md に載っているかを spec で確かめるようにした。コマンドを足して書き忘れるとテストが落ちる
+
 ## [2.1.0] - 2026-11-24
 
 ### 追加
