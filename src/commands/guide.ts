@@ -6,7 +6,7 @@ import fs from 'node:fs';
 const SKILL_TEMPLATE = `---
 name: erakis
 description: >
-  kintoneカスタマイズ開発環境erakisのCLIスキル。プロジェクト初期化・プロファイル管理・アプリ接続・開発サーバー起動・ビルド・デプロイ・MCP設定生成・ginue連携を提供する。
+  kintoneカスタマイズ開発環境erakisのCLIスキル。プロジェクト初期化・プロファイル管理・アプリ接続・開発サーバー起動・ビルド・デプロイ・スキーマ操作（アプリ作成・アプリ名変更・フィールド・レイアウト・ビュー）・kintone横断検索・MCP設定生成・ginue連携を提供する。
 ---
 
 # Erakis スキル
@@ -110,6 +110,22 @@ npx erakis api gen
 npx erakis api remove --alias <name>
 \`\`\`
 
+### \`search\`
+kintone を横断検索する（\`/k/v1/search.json\`）。レコード・コメント・スペース・スレッド・ピープル・メッセージ・添付ファイルが対象。
+パスワード認証で動く（API トークンは使えない）。アプリIDが分からないデータを探すときは、まずこれを使う。
+\`\`\`bash
+npx erakis search 見積 承認 --profile <name>                 # 位置引数は AND 条件
+npx erakis search --or 見積,請求 --not 下書き                  # --and/--or/--not は指定ごとに条件が1つ増える
+npx erakis search 見積 --type record,attachment --app 12,34   # 種類・範囲で絞る（--app だけなら全アプリ）
+npx erakis search 見積 --exclude-space 5 --creator user1 --after 2026-05-01T00:00:00+09:00
+npx erakis search 見積 --sort created --order asc --limit 20
+npx erakis search 見積 --all --json                          # 全ページを JSON で（AIが読むとき）
+npx erakis search 見積 --guest-space 7                       # ゲストスペース内（ID 省略で参加中のすべて）
+\`\`\`
+続きを取るには \`--page-token <nextPageToken>\`（30分有効）か \`--all\`（最大50ページ）を使う。
+値を省ける範囲オプション（\`--app\` / \`--space\` / \`--people\` / \`--message\` / \`--exclude-*\` / \`--guest-space\`）はすぐ後ろの語を値として読むので、キーワードは先に書く。
+search はアプリのデータを探すときに使う。フィールド構成を調べるときは下の schema の規律（digest → get-field）に従う。
+
 ### \`mcp\`
 kintone-mcp-server用の \`.mcp.json\` 設定ファイルを自動生成する。
 \`\`\`bash
@@ -186,8 +202,16 @@ npx erakis schema create                        # スペースなしで空アプ
 npx erakis schema create 123                    # 通常スペース 123 に作成
 npx erakis schema create 123 --guest-space      # ゲストスペース 123 に作成（/k/guest/... エンドポイント使用）
 npx erakis schema create --profile <name> -y
+npx erakis schema create --name "案件管理"        # アプリ名を付けて作成（省略時は "erakis app"）
 \`\`\`
 作成後は \`app register\` または \`app connect\` で管理下に追加する。
+
+#### アプリ名の変更
+\`\`\`bash
+npx erakis schema rename myapp "案件管理"          # preview に書く（確認あり）
+npx erakis schema rename 463 "案件管理" --profile <name> -y
+npx erakis schema deploy myapp                     # 本番へ反映
+\`\`\`
 
 #### スキーマ取得（スナップショット）
 \`\`\`bash
@@ -430,8 +454,10 @@ npx erakis guide --install
 | \`npx erakis api remove --alias <name>\` | APIターゲット削除 |
 | \`npx erakis mcp\` | .mcp.json設定ファイル生成 |
 | \`npx erakis ginue\` | .ginuerc.js設定ファイル生成 |
+| \`npx erakis search [keywords...] [--and] [--or] [--not] [--type] [--app] [--space] [--people] [--message] [--exclude-*] [--creator] [--after] [--before] [--synonyms] [--sort] [--order] [--limit] [--page-token] [--all] [--guest-space] [--profile] [--json]\` | kintone 横断検索 |
 | \`npx erakis clear\` | dist/buildディレクトリ削除 |
-| \`npx erakis schema create [spaceId] [--guest-space] [--profile] [-y]\` | 空の kintone アプリを作成 |
+| \`npx erakis schema create [spaceId] [--name] [--guest-space] [--profile] [-y]\` | 空の kintone アプリを作成 |
+| \`npx erakis schema rename <appRef> <name> [-e] [--profile] [-y]\` | アプリ名を変更（preview に積む） |
 | \`npx erakis schema pull [-a] [--no-latest]\` | kintoneスキーマをローカルに保存 |
 | \`npx erakis schema diff [a] [b] [--full] [--profile]\` | dev vs prod / 任意2アプリ間のスキーマ差分表示 |
 | \`npx erakis schema digest [-a] [-f md\|tsv] [-e] [--profile]\` | フィールドダイジェスト生成 |
@@ -471,7 +497,8 @@ init → genkey → profile add → app connect → start → build → launch
 - \`/erakis ginue\` — ginue設定生成
 - \`/erakis profile\` — プロファイル管理
 - \`/erakis open\` — アプリを開く
-- \`/erakis schema\` — スキーマ取得・差分確認・docs生成
+- \`/erakis schema\` — スキーマ取得・差分確認・docs生成・アプリ名変更
+- \`/erakis search\` — kintone 横断検索
 `;
 
 

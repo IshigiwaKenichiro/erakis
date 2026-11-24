@@ -8,6 +8,7 @@ import { schemaGetLayout, schemaUpdateLayout, schemaSyncLayout } from './layout.
 import { schemaGetViews, schemaUpdateViews, schemaSyncViews } from './views.js';
 import { schemaGetField, schemaCreateField, schemaUpdateField, schemaDeleteField } from './field.js';
 import { schemaCreate } from './create.js';
+import { schemaRename } from './rename.js';
 
 /**
  * `erakis schema` サブコマンド群を Commander のルートプログラムに登録する。
@@ -29,9 +30,17 @@ File path notes (for get-field, create-field, update-field, get-layout, update-l
         .description('create an empty kintone app. optional numeric space or guest-space ID.')
         .addHelpText('after', '\nUse --guest-space when the ID is a guest space ID (uses /k/guest/<id>/v1/... endpoints).\nAfter creation, run "app register" or "app connect" to add it to erakis management.')
         .option('--profile <name>', 'profile for the kintone domain/auth')
+        .option('--name <name>', 'app name (default: "erakis app")')
         .option('--guest-space', 'treat the space ID as a guest-space ID')
         .option('-y, --yes', 'skip confirmation prompt')
         .action(schemaCreate);
+
+    sub.command('rename <appRef> <name>')
+        .description('rename a kintone app in preview. run "schema deploy" to publish. appRef: appName [-e env] or appId[/guestSpaceId]')
+        .option('-e, --env <env>', 'target environment: dev or prod (default: dev)')
+        .option('--profile <name>', 'profile name for raw appId resolution')
+        .option('-y, --yes', 'skip confirmation prompt')
+        .action(schemaRename);
 
     sub.command('pull')
         .description('snapshot all customization apps (dev+prod) to kintone-app/snapshots/<timestamp>/')
