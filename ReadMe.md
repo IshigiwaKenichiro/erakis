@@ -237,6 +237,9 @@ npx erakis search 見積 --app 12,34 --sort created --order asc --all --json
     - AIエージェント向けのスキルセットアップガイドを表示する
 - npx erakis guide --install
     - Skill.mdを `~/.claude/skills/erakis/` に自動インストールする
+    - インストール済みの Skill.md がこの版の erakis の原本と違うとき（erakis を更新した、手で書き足した）は、上書きせずに止まる
+    - `--force` を付けると、今のファイルを `Skill.md.bak` に退避してから原本で上書きする
+    - `npx erakis guide` を打つと、インストール済みの Skill.md が原本と同じかどうかを表示する
 
 
 ## license

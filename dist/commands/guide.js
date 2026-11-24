@@ -1,8 +1,8 @@
 import { program } from 'commander';
 import path from 'node:path';
 import fs from 'node:fs';
-/** Skill.md のテンプレート */
-const SKILL_TEMPLATE = `---
+/** Skill.md のテンプレート（`guide --install` がインストールする原本） */
+export const SKILL_TEMPLATE = `---
 name: erakis
 description: >
   kintoneカスタマイズ開発環境erakisのCLIスキル。プロジェクト初期化・プロファイル管理・アプリ接続・開発サーバー起動・ビルド・デプロイ・スキーマ操作（アプリ作成・アプリ名変更・フィールド・レイアウト・ビュー）・kintone横断検索・MCP設定生成・ginue連携を提供する。
@@ -11,6 +11,9 @@ description: >
 # Erakis スキル
 
 kintoneカスタマイズ開発環境。CLIツール \`npx erakis\` を使用する。
+
+> ⚠️ \`-e\` / \`--env\` / \`--to\` の \`dev\` / \`prod\` は、\`.erakis/apps.json\` に登録した2つの接続先（development / production）の切り替えで、環境の名前ではない。
+> \`prod\` の行き先が本番とは限らないので、どのアプリに繋がるかをプロジェクトで確かめてから実行する。
 
 ## 引数による動作分岐
 
@@ -34,11 +37,12 @@ npx erakis genkey
 \`\`\`
 3. プロファイル作成（kintone接続情報の登録。パスワードを入れるのはユーザーなので、実行を依頼する）
 \`\`\`bash
-# インタラクティブ入力
+# 対話入力（パスワードは伏せ字で入る）
 npx erakis profile add
-# オプション指定でプロンプトをスキップ（基本認証は --basic-username / --basic-password も追加可）
-npx erakis profile add -n <name> --base-url <url> --username <user> --password <pass>
+# パスワード以外をオプションで渡す（渡した値が対話入力の既定値になり、パスワードは対話で入れる）
+npx erakis profile add -n <name> --base-url <url> --username <user>
 \`\`\`
+パスワードはコマンドの引数に書かない（シェルの履歴やログに残る）。対話入力か、環境変数 \`ERAKIS_PASSWORD\` / \`ERAKIS_BASIC_PASSWORD\` で渡す。
 4. アプリとの紐づけ
 
 カスタマイズファイルも一緒に生成する場合:
@@ -140,17 +144,17 @@ npx erakis ginue
 ### \`profile\`
 kintone接続プロファイルを管理する。
 \`\`\`bash
-# 追加（オプション省略時はインタラクティブ入力）
+# 追加（対話入力。オプションで渡した値は既定値になる。パスワードは対話で入れる）
 npx erakis profile add
-npx erakis profile add -n <name> --base-url <url> --username <user> --password <pass>
-npx erakis profile add -n <name> --base-url <url> --username <user> --password <pass> --basic-username <bu> --basic-password <bp>
+npx erakis profile add -n <name> --base-url <url> --username <user>
+npx erakis profile add -n <name> --base-url <url> --username <user> --basic-username <bu>
 
 # 一覧
 npx erakis profile list
 
-# 更新（オプション省略時はインタラクティブ入力、指定した項目だけ上書き）
+# 更新（対話入力。オプションで渡した値は既定値になる。パスワードは空のまま Enter で今の値を残す）
 npx erakis profile update <name>
-npx erakis profile update <name> --base-url <url> --username <user> --password <pass>
+npx erakis profile update <name> --base-url <url> --username <user>
 
 # 削除
 npx erakis profile remove <name>
@@ -183,6 +187,14 @@ kintoneアプリをブラウザで開く。
 \`\`\`bash
 npx erakis app open
 npx erakis app open --app <name>
+\`\`\`
+
+### \`codegen\`
+カスタマイズのテンプレートファイルを足し直す。\`src/app/<name>/\` と \`src/test/\` には無いファイルだけを足し、今あるファイルは上書きしない。開発サーバー用の \`.erakis/index/\` は作り直す。
+テンプレートのファイルを消してしまったときに使う。\`app register\` だけで登録したアプリには使えない（先に \`app connect\` する）。
+\`\`\`bash
+npx erakis app codegen
+npx erakis app codegen --app <name>
 \`\`\`
 
 ### \`schema\`
@@ -334,100 +346,40 @@ digest がない場合は \`npx erakis schema digest\` で生成すること。
 \`\`\`
 project/
 ├── .erakis/          # erakis設定（apps.json等）
-├── src/              # カスタマイズソースコード
-│   └── <appName>/    # アプリごとのディレクトリ
-│       ├── desktop.ts    # PC用カスタマイズ
-│       └── mobile.ts     # モバイル用カスタマイズ
+├── src/
+│   └── app/
+│       └── <appName>/                # アプリごとのディレクトリ（app connect が作る）
+│           ├── customize.desktop.ts  # PC用カスタマイズ（.js でもよい）
+│           ├── customize.desktop.css
+│           ├── customize.mobile.ts   # モバイル用カスタマイズ（.js でもよい）
+│           ├── customize.mobile.css
+│           └── cdn.json              # 読み込む外部ライブラリの URL
 ├── dist/             # 開発ビルド成果物
 ├── build/            # 本番ビルド出力
 └── package.json
 \`\`\`
+erakis がビルド・デプロイの対象にするのは \`src/app/<appName>/customize.desktop.ts\`（または \`.js\`）があるアプリだけ。ファイル名を変えると認識されない。
 
 ## 権限設定（推奨）
 
-\`~/.claude/settings.json\` の \`allowedTools\` に以下を追加:
+Claude Code の設定ファイルの \`permissions.allow\` に追加すると、毎回の承認が要らなくなる。
+ユーザー全体なら \`~/.claude/settings.json\`、このプロジェクトだけなら \`.claude/settings.json\` に書く。
 \`\`\`json
-"Bash(npx erakis *)"
+{
+  "permissions": {
+    "allow": ["Bash(npx erakis *)"]
+  }
+}
 \`\`\`
 `;
-/**
- * guideコマンド: スキルのセットアップガイドを出力する
- */
-export function guideCommand() {
-    program
-        .command('guide')
-        .description('AIエージェント向けのスキルセットアップガイドを表示する')
-        .option('--install', 'Skill.mdを ~/.claude/skills/erakis/ に自動インストールする')
-        .action((opts) => {
-        if (opts.install) {
-            installSkill();
-            return;
-        }
-        printGuide();
-    });
-}
-function installSkill() {
-    const home = process.env.HOME || process.env.USERPROFILE || '';
-    if (!home) {
-        console.error(JSON.stringify({ error: 'HOME/USERPROFILE が見つかりません' }));
-        process.exit(2);
-    }
-    const skillDir = path.join(home, '.claude', 'skills', 'erakis');
-    const skillPath = path.join(skillDir, 'Skill.md');
-    fs.mkdirSync(skillDir, { recursive: true });
-    fs.writeFileSync(skillPath, SKILL_TEMPLATE, 'utf-8');
-    console.log(JSON.stringify({
-        installed: true,
-        path: skillPath,
-        next: '~/.claude/settings.json の allowedTools に "Bash(npx erakis *)" を追加してください',
-    }));
-}
-function printGuide() {
-    const home = process.env.HOME || process.env.USERPROFILE || '';
-    const skillDir = path.join(home, '.claude', 'skills', 'erakis');
-    const skillPath = path.join(skillDir, 'Skill.md');
-    const skillExists = fs.existsSync(skillPath);
-    const guide = `# Erakis セットアップガイド（AIエージェント向け）
-
-${skillExists
-        ? `> ℹ️  Skill.md がインストール済みです。schema コマンドが追加された場合は \`npx erakis guide --install\` で再インストールを推奨します。`
-        : ''}
-
-## 前提パッケージ
-
-- **Node.js** / **npm**
-- **parcel** (v2): \`npm i parcel\`
-- **mkcert** (任意・devServer用): \`choco install mkcert\`
-
-## 1. スキルのインストール
-
-${skillExists
-        ? `✓ Skill.md は既にインストール済みです: ${skillPath}`
-        : `Skill.md が未インストールです。以下のコマンドで自動インストールできます:
-
-\`\`\`bash
-npx erakis guide --install
-\`\`\`
-
-または手動で \`${skillPath}\` に配置してください。`}
-
-## 2. 権限設定（推奨）
-
-\`~/.claude/settings.json\` の \`allowedTools\` に以下を追加すると、毎回の承認が不要になります:
-
-\`\`\`json
-"Bash(npx erakis *)"
-\`\`\`
-
-## 3. 全コマンド一覧
-
-| コマンド | 説明 |
+/** `npx erakis guide` の「全コマンド一覧」の表。登録したコマンドが全部載っているかは spec で確かめる */
+export const GUIDE_COMMAND_TABLE = `| コマンド | 説明 |
 |---------|------|
 | \`npx erakis init\` | プロジェクトのセットアップ |
 | \`npx erakis genkey\` | HTTPS自己証明書の生成 |
-| \`npx erakis profile add [-n] [--base-url] [--username] [--password] [--basic-username] [--basic-password]\` | プロファイル追加 |
+| \`npx erakis profile add [-n] [--base-url] [--username] [--basic-username]\` | プロファイル追加 |
 | \`npx erakis profile list\` | プロファイル一覧 |
-| \`npx erakis profile update <name> [--base-url] [--username] [--password] [--basic-username] [--basic-password]\` | プロファイル更新 |
+| \`npx erakis profile update <name> [--base-url] [--username] [--basic-username]\` | プロファイル更新 |
 | \`npx erakis profile remove <name>\` | プロファイル削除 |
 | \`npx erakis app connect [-n] [--dev-profile] [--prod-profile] [--dev-url] [--prod-url] [-y]\` | アプリ登録＋カスタマイズテンプレート生成 |
 | \`npx erakis app register [-n] [--dev-profile] [--prod-profile] [--dev-url] [--prod-url] [-y]\` | アプリをerakis管理下に登録（カスタマイズファイルなし） |
@@ -464,7 +416,79 @@ npx erakis guide --install
 | \`npx erakis schema update-views <appRef> <filePath> [-e] [--profile] [-y]\` | views 更新 |
 | \`npx erakis schema sync-views <appName> --to <dev\|prod> [-y] [--profile]\` | views を環境間同期 |
 | \`npx erakis schema docs [-e]\` | docs/schema/README.md 生成 |
-| \`npx erakis guide [--install]\` | AIエージェント向けスキルガイド表示・インストール |
+| \`npx erakis guide [--install] [--force]\` | AIエージェント向けスキルガイド表示・インストール（原本と違う Skill.md は --force が無ければ上書きしない） |`;
+/** 改行コードの違いだけで「原本と違う」と判定しないよう、比べる前にそろえる */
+function normalizeNewlines(text) {
+    return text.replace(/\r\n/g, '\n');
+}
+/** インストール済みの Skill.md の中身（無ければ null）から状態を決める */
+export function skillStateOf(installed) {
+    if (installed === null)
+        return 'missing';
+    return normalizeNewlines(installed) === normalizeNewlines(SKILL_TEMPLATE) ? 'same' : 'differs';
+}
+/**
+ * `guide --install` で何をするかを決める。
+ * 原本と違う Skill.md は、利用者が書き足した内容を消さないよう、--force が無ければ上書きしない。
+ */
+export function decideInstall(state, force) {
+    switch (state) {
+        case 'missing': return 'write';
+        case 'same': return 'skip-same';
+        case 'differs': return force ? 'backup-and-write' : 'refuse-differs';
+    }
+}
+/** 状態ごとの Skill.md の案内 */
+function skillSection(skillPath, state) {
+    switch (state) {
+        case 'missing':
+            return `Skill.md が未インストールです。以下のコマンドで自動インストールできます:
+
+\`\`\`bash
+npx erakis guide --install
+\`\`\`
+
+または手動で \`${skillPath}\` に配置してください。`;
+        case 'same':
+            return `✓ Skill.md はインストール済みで、この版の erakis の原本と同じです: ${skillPath}`;
+        case 'differs':
+            return `⚠ インストール済みの Skill.md は、この版の erakis の原本と違います: ${skillPath}
+erakis を更新したか、Skill.md に手で書き足したためです。\`npx erakis guide --install\` はこのファイルを上書きしません。
+
+- 原本で置き換えるなら \`npx erakis guide --install --force\`（今のファイルは \`Skill.md.bak\` に退避します）
+- 手で書き足しているなら、原本との差分を見て取り込んでください`;
+    }
+}
+/** `npx erakis guide` が表示する本文を組み立てる */
+export function buildGuide(skillPath, state) {
+    return `# Erakis セットアップガイド（AIエージェント向け）
+
+## 前提パッケージ
+
+- **Node.js** / **npm**
+- **parcel** (v2): \`npm i parcel\`
+- **mkcert** (任意・devServer用): \`choco install mkcert\`
+
+## 1. スキルのインストール
+
+${skillSection(skillPath, state)}
+
+## 2. 権限設定（推奨）
+
+Claude Code の設定ファイルの \`permissions.allow\` に追加すると、毎回の承認が要らなくなります。
+ユーザー全体なら \`~/.claude/settings.json\`、このプロジェクトだけなら \`.claude/settings.json\` に書きます。
+
+\`\`\`json
+{
+  "permissions": {
+    "allow": ["Bash(npx erakis *)"]
+  }
+}
+\`\`\`
+
+## 3. 全コマンド一覧
+
+${GUIDE_COMMAND_TABLE}
 
 ## 4. 開発ワークフロー
 
@@ -489,5 +513,64 @@ init → genkey → profile add → app connect → start → build → launch
 - \`/erakis schema\` — スキーマ取得・差分確認・docs生成・アプリ名変更
 - \`/erakis search\` — kintone 横断検索
 `;
-    console.log(guide);
+}
+/** ~/.claude/skills/erakis/Skill.md のパス。ホームが分からなければ null */
+function skillPathOf() {
+    const home = process.env.HOME || process.env.USERPROFILE || '';
+    if (!home)
+        return null;
+    return path.join(home, '.claude', 'skills', 'erakis', 'Skill.md');
+}
+function readInstalled(skillPath) {
+    return fs.existsSync(skillPath) ? fs.readFileSync(skillPath, 'utf-8') : null;
+}
+/**
+ * guideコマンド: スキルのセットアップガイドを出力する
+ */
+export function guideCommand() {
+    program
+        .command('guide')
+        .description('AIエージェント向けのスキルセットアップガイドを表示する')
+        .option('--install', 'Skill.mdを ~/.claude/skills/erakis/ に自動インストールする（原本と違う Skill.md は上書きしない）')
+        .option('--force', '--install と一緒に使う。原本と違う Skill.md を Skill.md.bak に退避してから上書きする')
+        .action((opts) => {
+        if (opts.install) {
+            installSkill(opts.force ?? false);
+            return;
+        }
+        printGuide();
+    });
+}
+function installSkill(force) {
+    const skillPath = skillPathOf();
+    if (!skillPath) {
+        console.error(JSON.stringify({ error: 'HOME/USERPROFILE が見つかりません' }));
+        process.exit(2);
+    }
+    const action = decideInstall(skillStateOf(readInstalled(skillPath)), force);
+    const next = 'Claude Code の設定ファイルの permissions.allow に "Bash(npx erakis *)" を追加してください';
+    if (action === 'skip-same') {
+        console.log(JSON.stringify({ installed: false, upToDate: true, path: skillPath }));
+        return;
+    }
+    if (action === 'refuse-differs') {
+        console.error(JSON.stringify({
+            installed: false,
+            path: skillPath,
+            reason: 'インストール済みの Skill.md がこの版の erakis の原本と違うため、上書きしませんでした',
+            hint: '原本で置き換えるなら --install --force（今のファイルは Skill.md.bak に退避します）',
+        }));
+        process.exitCode = 1;
+        return;
+    }
+    fs.mkdirSync(path.dirname(skillPath), { recursive: true });
+    const backupPath = action === 'backup-and-write' ? `${skillPath}.bak` : undefined;
+    if (backupPath)
+        fs.copyFileSync(skillPath, backupPath);
+    fs.writeFileSync(skillPath, SKILL_TEMPLATE, 'utf-8');
+    console.log(JSON.stringify({ installed: true, path: skillPath, backup: backupPath, next }));
+}
+function printGuide() {
+    const skillPath = skillPathOf() ?? path.join('~', '.claude', 'skills', 'erakis', 'Skill.md');
+    console.log(buildGuide(skillPath, skillStateOf(readInstalled(skillPath))));
 }
